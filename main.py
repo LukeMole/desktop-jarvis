@@ -38,7 +38,7 @@ def take_screenshot():
 
 
 def get_output(recognised_text, image_name):
-    prompt = recognised_text.split('hey jarvis')[1]
+    prompt = recognised_text.split('jarvis')[1]
     prompt = prompt.strip()
 
     print(prompt)
@@ -101,13 +101,18 @@ def listen():
         if 'terminate' in recognised_text.lower():
             print('Terminating...')
             break
-
-        if 'hey jarvis' in recognised_text.lower():
+        
+        # a is included as sometimes hey is caught as a
+        greetings = ['hey', 'hello', 'hi', 'a']
+        if [greeting for greeting in greetings if f'{greeting} jarvis' in recognised_text.lower()]:
             stream.stop_stream()
             take_screenshot()
             get_output(recognised_text, image_name)
-            stream.start_stream()
-
+            try: 
+                stream.start_stream()
+            except:
+                print('Error starting stream')
+                listen()
 
 if __name__ == '__main__':
     listen()

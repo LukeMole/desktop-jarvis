@@ -27,6 +27,7 @@ cur_dir = os.path.dirname(__file__)
 if os.path.exists(f'{cur_dir}/screenshots') == False:
     os.mkdir(f'{cur_dir}/screenshots')
 
+
 def take_screenshot():
     global image_name
     current_time = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime())

@@ -43,6 +43,7 @@ def get_output(recognised_text, image_name):
     print(prompt)
     print('')
 
+    #opens the image and sends it to the ollama chatbot, prompt is also engineered to streamline responses
     with open(f'{cur_dir}/screenshots/{image_name}', 'rb') as file:
         response = ollama.chat(model='llava', messages=[
             {

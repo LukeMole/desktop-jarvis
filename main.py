@@ -18,7 +18,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 def take_screenshot():
     screenshot = ImageGrab.grab()
 
-    screenshot.save('image.jpg')
+    screenshot.save('image.png')
 
 
 def get_output(recognised_text, image_name):
@@ -85,7 +85,7 @@ def listen():
         if 'hey jarvis' in recognised_text.lower():
             stream.stop_stream()
             take_screenshot()
-            get_output(recognised_text, 'image.jpg')
+            get_output(recognised_text, 'image.png')
             stream.start_stream()
 
 

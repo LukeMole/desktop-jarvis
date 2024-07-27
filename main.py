@@ -2,11 +2,17 @@ import vosk
 import pyaudio
 import json
 import os
+
+#necessary to not get ssl errors when downloading vosk model
 import certifi
 import ssl
-import ollama
-from PIL import ImageGrab
 
+# Import the ollama module for chat
+import ollama
+
+# Use image grab and time to take a screenshot and name it with the date/time
+from PIL import ImageGrab
+import time
 
 
 # Set the default SSL context to use the certifi bundle
@@ -14,26 +20,34 @@ from PIL import ImageGrab
 ssl_context = ssl.create_default_context(cafile=certifi.where())
 ssl._create_default_https_context = ssl._create_unverified_context
 
+image_name = ''
+
+# Get the current directory name and make the screenshots folder if it doesn't exist
+cur_dir = os.path.dirname(__file__)
+if os.path.exists(f'{cur_dir}/screenshots') == False:
+    os.mkdir(f'{cur_dir}/screenshots')
 
 def take_screenshot():
+    global image_name
+    current_time = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime())
+    image_name = current_time + '.png'
     screenshot = ImageGrab.grab()
 
-    screenshot.save('image.png')
+    screenshot.save(f'{cur_dir}/screenshots/{image_name}')
 
 
 def get_output(recognised_text, image_name):
-    cur_dir = os.path.dirname(__file__)
     prompt = recognised_text.split('hey jarvis')[1]
     prompt = prompt.strip()
 
     print(prompt)
     print('')
 
-    with open(f'{cur_dir}/{image_name}', 'rb') as file:
+    with open(f'{cur_dir}/screenshots/{image_name}', 'rb') as file:
         response = ollama.chat(model='llava', messages=[
             {
                 'role': 'user',
-                'content': f'Hey Jarvis, {prompt} (give only 1 suggestion to the question)',
+                'content': f'Hey Jarvis, {prompt} (give only 1 suggestion to the question) (if the image does not relate to the question, please ignore it)',
                 'images': [file.read()]
             }
         ])
@@ -43,6 +57,7 @@ def get_output(recognised_text, image_name):
 
 def listen():
     global ssl_context
+    global image_name
 
     #model_path = f'{cur_dir}/vosk-model-en-us-0.22'
     
@@ -70,13 +85,16 @@ def listen():
                     )
     
     while True:
+        # infinite loop to listen to users microphone
+        # if user says "hey jarvis" then it will take a screenshot and send the picture and what the user says
+        # to the ollama chatbot
         recognised_text = ''
         data = stream.read(8192, exception_on_overflow=False)
 
         if rec.AcceptWaveform(data):
             res = json.loads(rec.Result())
             recognised_text = res['text']
-            print(recognised_text)
+            #print(recognised_text)
 
         if 'terminate' in recognised_text.lower():
             print('Terminating...')
@@ -85,7 +103,7 @@ def listen():
         if 'hey jarvis' in recognised_text.lower():
             stream.stop_stream()
             take_screenshot()
-            get_output(recognised_text, 'image.png')
+            get_output(recognised_text, image_name)
             stream.start_stream()
 
 

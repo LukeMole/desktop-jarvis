@@ -1,6 +1,5 @@
-customtkinter
 ollama
-portaudio (brew (in global modules not .venv))
-pyaudio (in global modules not .venv)
-soundfile
+portaudio
+pyaudio
+pyttsx3
 vosk

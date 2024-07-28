@@ -8,3 +8,10 @@
 Vosk is used for speech-to-text.
 pyttsx3 is used for text-to-speech.
 ollama is used for response generation and it is using the llava model.
+
+necessary modules are as follows:
+    vosk
+    pyaudio
+    ollama
+    pillow
+    pyttsx3

@@ -14,6 +14,8 @@ import ollama
 from PIL import ImageGrab
 import time
 
+import pyttsx3
+
 
 # Set the default SSL context to use the certifi bundle
 # this allows files to be downloaded without errors
@@ -27,17 +29,31 @@ cur_dir = os.path.dirname(__file__)
 if os.path.exists(f'{cur_dir}/screenshots') == False:
     os.mkdir(f'{cur_dir}/screenshots')
 
+all_messages = [{'role':'system', 'content':'[GIVE ONLY 1 SUGGESTION TO THE QUESTION] [IF THE IMAGE DOES NOT DIRECTLY RELATE TO THE QUESTION IGNORE IT] [GIVE ONLY SHORT RESPONSES]'}]
+
+
+def speak(text):
+    engine = pyttsx3.init()
+    voices = engine.getProperty('voices')
+    engine.setProperty('voice', voices[0].id)
+    engine.setProperty('rate', 200) 
+    engine.say(text)
+    engine.runAndWait()
+
 
 def take_screenshot():
     global image_name
     current_time = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime())
     image_name = current_time + '.png'
     screenshot = ImageGrab.grab()
+    screenshot_720p = screenshot.resize((1280, 720))
 
-    screenshot.save(f'{cur_dir}/screenshots/{image_name}')
+    screenshot_720p.save(f'{cur_dir}/screenshots/{image_name}')
 
 
 def get_output(recognised_text, image_name):
+    global all_messages
+
     prompt = recognised_text.split('jarvis')[1]
     prompt = prompt.strip()
 
@@ -46,20 +62,23 @@ def get_output(recognised_text, image_name):
 
     #opens the image and sends it to the ollama chatbot, prompt is also engineered to streamline responses
     with open(f'{cur_dir}/screenshots/{image_name}', 'rb') as file:
-        response = ollama.chat(model='llava', messages=[
-            {
-                'role': 'user',
-                'content': f'Hey Jarvis, {prompt} (give only 1 suggestion to the question) (if the image does not relate to the question, please ignore it)',
-                'images': [file.read()]
-            }
-        ])
+        all_messages.append({'role':'user',
+                            'content':prompt,
+                            'images':[file.read()]})
+        
+        response = ollama.chat(model='llava', messages=all_messages)
 
+        all_messages.append({'role':'assistant',
+                             'content':response['message']['content'],})
+        
         print(response['message']['content'])
+        speak(response['message']['content'])
 
 
 def listen():
     global ssl_context
     global image_name
+    global all_messages
 
     #model_path = f'{cur_dir}/vosk-model-en-us-0.22'
     
@@ -98,12 +117,14 @@ def listen():
             recognised_text = res['text']
             #print(recognised_text)
 
-        if 'terminate' in recognised_text.lower():
-            print('Terminating...')
+        if 'start new chat' in recognised_text.lower():
+            all_messages = [{'role':'system', 'content':'[GIVE ONLY 1 SUGGESTION TO THE QUESTION] [IF THE USER IMAGE DOES NOT DIRECTLY RELATE TO THE QUESTION IGNORE IT] [GIVE ONLY SHORT RESPONSES]'},
+                            {'role':'system', 'content':'[IF THE USER IMAGE DOES NOT DIRECTLY RELATE TO THE QUESTION IGNORE IT]',
+                             'role':'system', 'content':'[GIVE ONLY SHORT RESPONSES]'}]
             break
         
         # a is included as sometimes hey is caught as a
-        greetings = ['hey', 'hello', 'hi', 'a']
+        greetings = ['hey', 'hello', 'hi', 'a', 'so']
         if [greeting for greeting in greetings if f'{greeting} jarvis' in recognised_text.lower()]:
             stream.stop_stream()
             take_screenshot()
